@@ -6,7 +6,7 @@ import { CaptchaState } from '../../services/captcha-state';
 import { correctAnswerFor } from '../../testing/captcha-test-helpers';
 import { Captcha } from './captcha';
 
-/** Selects every tile id in `answer` (color-grid) or sets the number control (math/pattern). */
+/** Selects every tile id in `answer` (image-grid) or sets the number control (math/pattern). */
 function enterAnswer(component: Captcha, answer: ReturnType<typeof correctAnswerFor>): void {
   if (Array.isArray(answer)) {
     answer.forEach((id) => component.toggleTile(id));
@@ -16,13 +16,13 @@ function enterAnswer(component: Captcha, answer: ReturnType<typeof correctAnswer
 }
 
 /**
- * Stage order is shuffled per session — skip forward until a color-grid stage is
+ * Stage order is shuffled per session — skip forward until an image-grid stage is
  * current. Goes through the component's own submit(), not the service directly,
  * so `viewedStageIndex` stays in sync exactly as it would for a real user (the
  * component is the only thing that ever advances the session in the real app).
  */
-function advanceToColorGridStage(component: Captcha, state: CaptchaState): void {
-  while (state.currentStage()!.challenge.type !== ChallengeType.ColorGrid) {
+function advanceToImageGridStage(component: Captcha, state: CaptchaState): void {
+  while (state.currentStage()!.challenge.type !== ChallengeType.ImageGrid) {
     enterAnswer(component, correctAnswerFor(state));
     component.submit();
   }
@@ -32,6 +32,7 @@ describe('Captcha', () => {
   let component: Captcha;
   let fixture: ComponentFixture<Captcha>;
   let captchaState: CaptchaState;
+  let navigateSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(async () => {
     localStorage.clear();
@@ -43,6 +44,14 @@ describe('Captcha', () => {
     fixture = TestBed.createComponent(Captcha);
     component = fixture.componentInstance;
     captchaState = TestBed.inject(CaptchaState);
+
+    // Mocked (not just spied on) for every test in this file: the test router has no
+    // real routes (provideRouter([])), and several tests drive the session to a
+    // random stage order — any of them can incidentally complete every stage and
+    // trigger a real navigateByUrl('/result') call, which would otherwise reject
+    // with NG04002 (no route matches) as an unhandled rejection.
+    navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+
     fixture.detectChanges();
   });
 
@@ -50,16 +59,16 @@ describe('Captcha', () => {
     expect(component).toBeTruthy();
   });
 
-  it('renders a labeled number input for math/pattern stages, or a 3x3 grid of named tiles for color-grid stages', () => {
+  it('renders a labeled number input for math/pattern stages, or a 3x3 grid of named images for image-grid stages', () => {
     const challenge = captchaState.currentStage()!.challenge;
     const compiled = fixture.nativeElement as HTMLElement;
 
-    if (challenge.type === ChallengeType.ColorGrid) {
+    if (challenge.type === ChallengeType.ImageGrid) {
       const tiles = compiled.querySelectorAll('.tile');
       expect(tiles).toHaveLength(9);
       expect(compiled.querySelector('input[type="number"]')).toBeNull();
-      // Screen readers can't perceive color from a background style alone.
-      tiles.forEach((tile) => expect(tile.getAttribute('aria-label')).toBeTruthy());
+      // Each tile's accessible name comes from its <img alt>, not a color/style alone.
+      tiles.forEach((tile) => expect(tile.querySelector('img')?.getAttribute('alt')).toBeTruthy());
     } else {
       const input = compiled.querySelector('input[type="number"]') as HTMLInputElement;
       expect(input).not.toBeNull();
@@ -75,8 +84,8 @@ describe('Captcha', () => {
 
   it('shows feedback and records an attempt on a wrong submission, without advancing the stage', () => {
     const challenge = captchaState.currentStage()!.challenge;
-    if (challenge.type === ChallengeType.ColorGrid) {
-      const wrongTile = challenge.tiles.find((t) => t.color !== challenge.targetColor)!;
+    if (challenge.type === ChallengeType.ImageGrid) {
+      const wrongTile = challenge.tiles.find((t) => t.category !== challenge.targetCategory)!;
       component.toggleTile(wrongTile.id);
     } else {
       component.numberAnswer.setValue(challenge.answer + 1000);
@@ -98,8 +107,8 @@ describe('Captcha', () => {
 
   it('resets the answer state after a wrong submission instead of leaving a stale pick behind', () => {
     const challenge = captchaState.currentStage()!.challenge;
-    if (challenge.type === ChallengeType.ColorGrid) {
-      const wrongTile = challenge.tiles.find((t) => t.color !== challenge.targetColor)!;
+    if (challenge.type === ChallengeType.ImageGrid) {
+      const wrongTile = challenge.tiles.find((t) => t.category !== challenge.targetCategory)!;
       component.toggleTile(wrongTile.id);
     } else {
       component.numberAnswer.setValue(challenge.answer + 1000);
@@ -113,15 +122,17 @@ describe('Captcha', () => {
   });
 
   it('regression: a leftover wrong-tile selection no longer corrupts the next correct submission', () => {
-    advanceToColorGridStage(component, captchaState);
+    advanceToImageGridStage(component, captchaState);
     fixture.detectChanges();
 
     const challenge = captchaState.currentStage()!.challenge;
-    if (challenge.type !== ChallengeType.ColorGrid) {
-      throw new Error('expected a color-grid stage');
+    if (challenge.type !== ChallengeType.ImageGrid) {
+      throw new Error('expected an image-grid stage');
     }
-    const wrongTile = challenge.tiles.find((t) => t.color !== challenge.targetColor)!;
-    const correctIds = challenge.tiles.filter((t) => t.color === challenge.targetColor).map((t) => t.id);
+    const wrongTile = challenge.tiles.find((t) => t.category !== challenge.targetCategory)!;
+    const correctIds = challenge.tiles
+      .filter((t) => t.category === challenge.targetCategory)
+      .map((t) => t.id);
 
     // First attempt: pick a wrong tile.
     component.toggleTile(wrongTile.id);
@@ -151,9 +162,6 @@ describe('Captcha', () => {
   });
 
   it('navigates to /result once the final stage is completed correctly', () => {
-    const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigateByUrl');
-
     const lastStageIndex = captchaState.session().stages.length - 1;
     while (captchaState.session().currentStageIndex < lastStageIndex) {
       enterAnswer(component, correctAnswerFor(captchaState));

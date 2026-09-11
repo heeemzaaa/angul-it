@@ -47,7 +47,10 @@ describe('Result', () => {
 
   it('restart() resets the session and navigates back to /captcha', () => {
     const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigateByUrl');
+    // Mocked, not just spied on: the test's router has no real routes (provideRouter([])),
+    // so letting the actual navigation run would reject with NG04002 (no route matches) —
+    // an unhandled rejection unrelated to what this test verifies.
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     const sessionIdBefore = captchaState.session().sessionId;
 
     component.restart();

@@ -4,7 +4,6 @@ import { Router } from '@angular/router';
 import { ChallengeAnswer, ChallengeType } from '../../models/challenge.model';
 import { StageProgress } from '../../models/session.model';
 import { CaptchaState, STAGE_COUNT } from '../../services/captcha-state';
-import { colorName } from '../../services/challenge-generators';
 
 @Component({
   selector: 'app-captcha',
@@ -21,6 +20,11 @@ export class Captcha {
   readonly stageCount = STAGE_COUNT;
   readonly stages = computed(() => this.captchaState.session().stages);
 
+  /**
+   * Which stage is currently shown. Defaults to (and follows) the active
+   * stage, but the user can browse back to any already-completed one —
+   * read-only, since re-submitting a finished stage isn't meaningful.
+   */
   readonly viewedStageIndex = signal(this.captchaState.session().currentStageIndex);
   readonly viewedStage = computed<StageProgress | undefined>(() => this.stages()[this.viewedStageIndex()]);
   readonly isViewingActiveStage = computed(
@@ -32,6 +36,10 @@ export class Captcha {
   readonly wasWrong = signal(false);
 
   constructor() {
+    // The native `autofocus` attribute only fires on a real page load — Angular
+    // swapping in a new <input> for the next stage doesn't retrigger it once the
+    // user has already interacted with the page. Focus it explicitly instead,
+    // re-running after every render where the viewed stage changed.
     afterRenderEffect(() => {
       this.viewedStage();
       this.elementRef.nativeElement.querySelector<HTMLInputElement>('#answer')?.focus();
@@ -42,15 +50,12 @@ export class Captcha {
     if (!this.isViewingActiveStage()) return false;
     const challenge = this.viewedStage()?.challenge;
     if (!challenge) return false;
-    return challenge.type === ChallengeType.ColorGrid
+    return challenge.type === ChallengeType.ImageGrid
       ? this.selectedTileIds().length > 0
       : this.numberAnswer.valid;
   }
 
-  colorName(hex: string): string {
-    return colorName(hex);
-  }
-
+  /** Only stages already reached — completed ones, or the current active one — can be viewed. */
   canViewStage(index: number): boolean {
     return index <= this.captchaState.session().currentStageIndex;
   }
@@ -74,7 +79,7 @@ export class Captcha {
     if (!challenge || !this.canSubmit) return;
 
     const answer: ChallengeAnswer =
-      challenge.type === ChallengeType.ColorGrid ? this.selectedTileIds() : this.numberAnswer.value!;
+      challenge.type === ChallengeType.ImageGrid ? this.selectedTileIds() : this.numberAnswer.value!;
 
     const correct = this.captchaState.submitAnswer(answer);
     this.wasWrong.set(!correct);
@@ -83,6 +88,7 @@ export class Captcha {
     this.selectedTileIds.set([]);
 
     if (correct) {
+      // Follow the view forward to whatever stage is now active.
       this.viewedStageIndex.set(this.captchaState.session().currentStageIndex);
       if (this.captchaState.isComplete()) {
         this.router.navigateByUrl('/result');

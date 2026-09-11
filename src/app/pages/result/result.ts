@@ -7,7 +7,7 @@ import { CaptchaState } from '../../services/captcha-state';
 const CHALLENGE_TYPE_LABELS: Record<ChallengeType, string> = {
   [ChallengeType.MathPuzzle]: 'Math Puzzle',
   [ChallengeType.PatternSequence]: 'Pattern Sequence',
-  [ChallengeType.ColorGrid]: 'Color Grid',
+  [ChallengeType.ImageGrid]: 'Image Grid',
 };
 
 @Component({

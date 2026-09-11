@@ -39,28 +39,28 @@
           <input id="answer" type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" />
         }
       }
-      @case (ChallengeType.ColorGrid) {
+      @case (ChallengeType.ImageGrid) {
         <p class="prompt">
-          Match this color:
-          <span
-            class="swatch"
-            [style.background]="viewed.challenge.targetColor"
-            [attr.aria-label]="colorName(viewed.challenge.targetColor)"
-          ></span>
+          Match this image:
+          <img
+            class="target-image"
+            [src]="viewed.challenge.targetImageUrl"
+            [alt]="viewed.challenge.targetCategory"
+          />
         </p>
-        <div class="grid" role="group" aria-label="Color tiles">
+        <div class="grid" role="group" aria-label="Image tiles">
           @for (tile of viewed.challenge.tiles; track tile.id) {
             <button
               type="button"
               class="tile"
-              [style.background]="tile.color"
               [class.selected]="isViewingActiveStage() && selectedTileIds().includes(tile.id)"
-              [class.correct]="!isViewingActiveStage() && tile.color === viewed.challenge.targetColor"
+              [class.correct]="!isViewingActiveStage() && tile.category === viewed.challenge.targetCategory"
               [disabled]="!isViewingActiveStage()"
               (click)="toggleTile(tile.id)"
-              [attr.aria-label]="colorName(tile.color)"
               [attr.aria-pressed]="isViewingActiveStage() && selectedTileIds().includes(tile.id)"
-            ></button>
+            >
+              <img [src]="tile.imageUrl" [alt]="tile.category" />
+            </button>
           }
         </div>
       }

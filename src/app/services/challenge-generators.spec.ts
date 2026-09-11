@@ -1,6 +1,6 @@
 import { ChallengeType } from '../models/challenge.model';
 import {
-  generateColorGrid,
+  generateImageGrid,
   generateMathPuzzle,
   generatePatternSequence,
   isAnswerCorrect,
@@ -29,13 +29,15 @@ describe('challenge-generators', () => {
       expect(isAnswerCorrect(challenge, challenge.answer)).toBe(true);
     });
 
-    it('generates a 3x3 color grid where only tiles matching targetColor are correct', () => {
-      const challenge = generateColorGrid();
-      expect(challenge.type).toBe(ChallengeType.ColorGrid);
+    it('generates a 3x3 image grid where only tiles matching targetCategory are correct', () => {
+      const challenge = generateImageGrid();
+      expect(challenge.type).toBe(ChallengeType.ImageGrid);
       expect(challenge.tiles).toHaveLength(9);
+      expect(challenge.targetImageUrl).toBeTruthy();
+      challenge.tiles.forEach((tile) => expect(tile.imageUrl).toBeTruthy());
 
       const matchingIds = challenge.tiles
-        .filter((tile) => tile.color === challenge.targetColor)
+        .filter((tile) => tile.category === challenge.targetCategory)
         .map((tile) => tile.id);
       expect(matchingIds.length).toBeGreaterThanOrEqual(2);
       expect(matchingIds.length).toBeLessThanOrEqual(4);
@@ -48,7 +50,7 @@ describe('challenge-generators', () => {
 
   describe('isAnswerCorrect', () => {
     it('rejects an answer shaped for the wrong challenge type instead of throwing', () => {
-      const grid = generateColorGrid();
+      const grid = generateImageGrid();
       const math = generateMathPuzzle();
       expect(isAnswerCorrect(grid, 42)).toBe(false);
       expect(isAnswerCorrect(math, ['not-a-number'])).toBe(false);

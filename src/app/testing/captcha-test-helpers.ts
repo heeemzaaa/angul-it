@@ -7,8 +7,8 @@ export function correctAnswerFor(state: CaptchaState): ChallengeAnswer {
     case ChallengeType.MathPuzzle:
     case ChallengeType.PatternSequence:
       return challenge.answer;
-    case ChallengeType.ColorGrid:
-      return challenge.tiles.filter((t) => t.color === challenge.targetColor).map((t) => t.id);
+    case ChallengeType.ImageGrid:
+      return challenge.tiles.filter((t) => t.category === challenge.targetCategory).map((t) => t.id);
   }
 }
 

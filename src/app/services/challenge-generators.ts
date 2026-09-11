@@ -2,12 +2,13 @@ import {
   Challenge,
   ChallengeAnswer,
   ChallengeType,
-  ColorGridChallenge,
-  ColorGridTile,
+  ImageGridChallenge,
+  ImageGridTile,
   MathPuzzleChallenge,
   PatternSequenceChallenge,
 } from '../models/challenge.model';
 
+/** Inclusive random integer in [min, max]. */
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -54,23 +55,24 @@ export function generatePatternSequence(): PatternSequenceChallenge {
   };
 }
 
-const GRID_COLORS: Record<string, string> = {
-  '#e74c3c': 'red',
-  '#3498db': 'blue',
-  '#2ecc71': 'green',
-  '#f1c40f': 'yellow',
-  '#9b59b6': 'purple',
-  '#e67e22': 'orange',
+
+const IMAGE_CATEGORIES: Record<string, string[]> = {
+  cat: ['/images/cat/1.jpg', '/images/cat/2.jpg', '/images/cat/3.jpg'],
+  dog: ['/images/dog/1.jpg', '/images/dog/2.jpg', '/images/dog/3.jpg'],
+  car: ['/images/car/1.jpg', '/images/car/2.jpg', '/images/car/3.jpg'],
+  tree: ['/images/tree/1.jpg', '/images/tree/2.jpg', '/images/tree/3.jpg'],
+  house: ['/images/house/1.jpg', '/images/house/2.jpg', '/images/house/3.jpg'],
+  flower: ['/images/flower/1.jpg', '/images/flower/2.jpg', '/images/flower/3.jpg'],
 };
-const GRID_PALETTE = Object.keys(GRID_COLORS);
+const CATEGORY_NAMES = Object.keys(IMAGE_CATEGORIES);
 const GRID_SIZE = 9;
 
-export function colorName(hex: string): string {
-  return GRID_COLORS[hex] ?? hex;
+function randomImageFor(category: string): string {
+  return randomItem(IMAGE_CATEGORIES[category]);
 }
 
-export function generateColorGrid(): ColorGridChallenge {
-  const targetColor = randomItem(GRID_PALETTE);
+export function generateImageGrid(): ImageGridChallenge {
+  const targetCategory = randomItem(CATEGORY_NAMES);
   const matchCount = randomInt(2, 4);
 
   const matchIndexes = new Set<number>();
@@ -78,17 +80,18 @@ export function generateColorGrid(): ColorGridChallenge {
     matchIndexes.add(randomInt(0, GRID_SIZE - 1));
   }
 
-  const otherColors = GRID_PALETTE.filter((color) => color !== targetColor);
-  const tiles: ColorGridTile[] = Array.from({ length: GRID_SIZE }, (_, i) => ({
-    id: `tile-${i}`,
-    color: matchIndexes.has(i) ? targetColor : randomItem(otherColors),
-  }));
+  const otherCategories = CATEGORY_NAMES.filter((category) => category !== targetCategory);
+  const tiles: ImageGridTile[] = Array.from({ length: GRID_SIZE }, (_, i) => {
+    const category = matchIndexes.has(i) ? targetCategory : randomItem(otherCategories);
+    return { id: `tile-${i}`, category, imageUrl: randomImageFor(category) };
+  });
 
   return {
     id: newChallengeId(),
-    type: ChallengeType.ColorGrid,
-    instructions: 'Select every tile that matches the highlighted color.',
-    targetColor,
+    type: ChallengeType.ImageGrid,
+    instructions: 'Select every image that matches the highlighted one.',
+    targetCategory,
+    targetImageUrl: randomImageFor(targetCategory),
     tiles,
   };
 }
@@ -96,27 +99,29 @@ export function generateColorGrid(): ColorGridChallenge {
 const GENERATORS: Record<ChallengeType, () => Challenge> = {
   [ChallengeType.MathPuzzle]: generateMathPuzzle,
   [ChallengeType.PatternSequence]: generatePatternSequence,
-  [ChallengeType.ColorGrid]: generateColorGrid,
+  [ChallengeType.ImageGrid]: generateImageGrid,
 };
 
 export function generateChallenge(type: ChallengeType): Challenge {
   return GENERATORS[type]();
 }
 
+/** All challenge types, shuffled — one stage per type, in a random order each session. */
 export function pickStageTypes(): ChallengeType[] {
   return Object.values(ChallengeType).sort(() => Math.random() - 0.5);
 }
 
+/** Single source of truth for "was this answer right" — one case per challenge type. */
 export function isAnswerCorrect(challenge: Challenge, answer: ChallengeAnswer): boolean {
   switch (challenge.type) {
     case ChallengeType.MathPuzzle:
     case ChallengeType.PatternSequence:
       return Number(answer) === challenge.answer;
 
-    case ChallengeType.ColorGrid: {
+    case ChallengeType.ImageGrid: {
       if (!Array.isArray(answer)) return false;
       const correctIds = challenge.tiles
-        .filter((tile) => tile.color === challenge.targetColor)
+        .filter((tile) => tile.category === challenge.targetCategory)
         .map((tile) => tile.id);
       const selected = new Set(answer);
       return correctIds.length === selected.size && correctIds.every((id) => selected.has(id));
