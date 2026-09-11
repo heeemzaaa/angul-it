@@ -54,7 +54,6 @@ export function generatePatternSequence(): PatternSequenceChallenge {
   };
 }
 
-// Names double as the accessible label for each tile — screen readers can't perceive color alone.
 const GRID_COLORS: Record<string, string> = {
   '#e74c3c': 'red',
   '#3498db': 'blue',
