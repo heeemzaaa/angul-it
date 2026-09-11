@@ -1,25 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 
-import { ChallengeAnswer, ChallengeType } from '../models/challenge.model';
+import { correctAnswerFor } from '../testing/captcha-test-helpers';
 import { CaptchaState, STAGE_COUNT } from './captcha-state';
 
 const STORAGE_KEY = 'angul-it:session';
-
-/** Answers correctly regardless of challenge type/shape — used to drive the flow forward in tests. */
-function correctAnswerFor(state: CaptchaState): ChallengeAnswer {
-  const challenge = state.currentStage()!.challenge;
-  switch (challenge.type) {
-    case ChallengeType.MathPuzzle:
-    case ChallengeType.PatternSequence:
-      return challenge.answer;
-    case ChallengeType.DistortedText:
-      return challenge.displayText;
-    case ChallengeType.ColorGrid:
-      return challenge.tiles.filter((t) => t.color === challenge.targetColor).map((t) => t.id);
-    case ChallengeType.SliderAlign:
-      return challenge.targetPosition;
-  }
-}
 
 describe('CaptchaState', () => {
   let service: CaptchaState;
@@ -49,7 +33,7 @@ describe('CaptchaState', () => {
   });
 
   it('keeps the user on the same stage and records an attempt on a wrong answer', () => {
-    service.submitAnswer('definitely-wrong');
+    service.submitAnswer(-1); // never a valid answer for any challenge type
     const session = service.session();
     expect(session.currentStageIndex).toBe(0);
     expect(session.stages[0].status).toBe('active');
@@ -83,7 +67,7 @@ describe('CaptchaState', () => {
 
     // Re-answering stage 0 shouldn't be possible via the service's own current-stage pointer,
     // but guard the invariant directly: submitting again only ever affects the *current* stage.
-    service.submitAnswer('wrong');
+    service.submitAnswer(-1);
     expect(service.session().stages[1].attempts).toBe(beforeStage1Attempts + 1);
     expect(service.session().stages[0].attempts).toBe(1);
   });

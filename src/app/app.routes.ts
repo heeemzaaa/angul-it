@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { sessionCompleteGuard } from './guards/session-complete-guard';
 
 export const routes: Routes = [
   {
@@ -12,8 +13,7 @@ export const routes: Routes = [
   {
     path: 'result',
     loadComponent: () => import('./pages/result/result').then((m) => m.Result),
-    // TODO (step 5): guard this route so it redirects to /captcha unless every
-    // stage is completed — see CaptchaSession / isSessionComplete().
+    canActivate: [sessionCompleteGuard],
   },
   {
     path: '**',

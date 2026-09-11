@@ -1,10 +1,8 @@
 import { ChallengeType } from '../models/challenge.model';
 import {
   generateColorGrid,
-  generateDistortedText,
   generateMathPuzzle,
   generatePatternSequence,
-  generateSliderAlign,
   isAnswerCorrect,
   pickStageTypes,
 } from './challenge-generators';
@@ -46,50 +44,22 @@ describe('challenge-generators', () => {
       expect(isAnswerCorrect(challenge, [])).toBe(false);
       expect(isAnswerCorrect(challenge, [...matchingIds, 'tile-does-not-exist'])).toBe(false);
     });
-
-    it('generates distorted text with an unambiguous 6-character alphabet, checked case-insensitively', () => {
-      const challenge = generateDistortedText();
-      expect(challenge.type).toBe(ChallengeType.DistortedText);
-      expect(challenge.displayText).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);
-
-      expect(isAnswerCorrect(challenge, challenge.displayText.toLowerCase())).toBe(true);
-      expect(isAnswerCorrect(challenge, `  ${challenge.displayText}  `)).toBe(true);
-      expect(isAnswerCorrect(challenge, 'wrong!')).toBe(false);
-    });
-
-    it('generates a slider target within range, correct only inside tolerance', () => {
-      const challenge = generateSliderAlign();
-      expect(challenge.type).toBe(ChallengeType.SliderAlign);
-      expect(challenge.targetPosition).toBeGreaterThanOrEqual(15);
-      expect(challenge.targetPosition).toBeLessThanOrEqual(85);
-
-      expect(isAnswerCorrect(challenge, challenge.targetPosition)).toBe(true);
-      expect(isAnswerCorrect(challenge, challenge.targetPosition + challenge.tolerance)).toBe(true);
-      expect(isAnswerCorrect(challenge, challenge.targetPosition + challenge.tolerance + 1)).toBe(false);
-    });
   });
 
   describe('isAnswerCorrect', () => {
-    it('rejects answers of the wrong shape instead of throwing', () => {
+    it('rejects an answer shaped for the wrong challenge type instead of throwing', () => {
       const grid = generateColorGrid();
-      const slider = generateSliderAlign();
-      expect(isAnswerCorrect(grid, 'not-an-array')).toBe(false);
-      expect(isAnswerCorrect(slider, 'not-a-number')).toBe(false);
+      const math = generateMathPuzzle();
+      expect(isAnswerCorrect(grid, 42)).toBe(false);
+      expect(isAnswerCorrect(math, ['not-a-number'])).toBe(false);
     });
   });
 
   describe('pickStageTypes', () => {
-    it('returns the requested count with no duplicates when count fits the catalogue', () => {
-      const types = pickStageTypes(4);
-      expect(types).toHaveLength(4);
-      expect(new Set(types).size).toBe(4);
-    });
-
-    it('cycles through the catalogue without throwing when count exceeds it', () => {
-      const allTypes = Object.values(ChallengeType).length;
-      const types = pickStageTypes(allTypes + 2);
-      expect(types).toHaveLength(allTypes + 2);
-      types.forEach((type) => expect(Object.values(ChallengeType)).toContain(type));
+    it('returns every challenge type exactly once, in some order', () => {
+      const types = pickStageTypes();
+      expect(new Set(types)).toEqual(new Set(Object.values(ChallengeType)));
+      expect(types).toHaveLength(Object.values(ChallengeType).length);
     });
   });
 });

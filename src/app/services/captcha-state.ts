@@ -1,12 +1,12 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { ChallengeAnswer } from '../models/challenge.model';
+import { ChallengeAnswer, ChallengeType } from '../models/challenge.model';
 import { CaptchaSession, StageProgress, isSessionComplete } from '../models/session.model';
 import { generateChallenge, isAnswerCorrect, pickStageTypes } from './challenge-generators';
 
 const STORAGE_KEY = 'angul-it:session';
 
-/** Number of CAPTCHA stages in a session. */
-export const STAGE_COUNT = 4;
+/** One stage per challenge type. */
+export const STAGE_COUNT = Object.values(ChallengeType).length;
 
 /**
  * Single source of truth for "where is the user in the CAPTCHA flow." Holds
@@ -96,7 +96,7 @@ export class CaptchaState {
   }
 
   private createSession(): CaptchaSession {
-    const stages: StageProgress[] = pickStageTypes(STAGE_COUNT).map((type, index) => ({
+    const stages: StageProgress[] = pickStageTypes().map((type, index) => ({
       stageIndex: index,
       challenge: generateChallenge(type),
       status: index === 0 ? 'active' : 'locked',

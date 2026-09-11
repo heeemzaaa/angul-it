@@ -7,8 +7,6 @@ export enum ChallengeType {
   MathPuzzle = 'math-puzzle',
   PatternSequence = 'pattern-sequence',
   ColorGrid = 'color-grid',
-  DistortedText = 'distorted-text',
-  SliderAlign = 'slider-align',
 }
 
 /** Fields every challenge shares, regardless of type. */
@@ -46,31 +44,11 @@ export interface ColorGridTile {
   color: string;
 }
 
-/** A random string rendered with CSS distortion (rotation/skew/spacing) — type what you read. */
-export interface DistortedTextChallenge extends BaseChallenge {
-  type: ChallengeType.DistortedText;
-  displayText: string;
-  /** Answer checking is case-insensitive. */
-  answer: string;
-}
-
-/** Drag a handle until it lands within tolerance of a hidden target position (0–100). */
-export interface SliderAlignChallenge extends BaseChallenge {
-  type: ChallengeType.SliderAlign;
-  targetPosition: number;
-  tolerance: number;
-}
-
 /** Discriminated union — switch on `type` to narrow to the concrete challenge shape. */
-export type Challenge =
-  | MathPuzzleChallenge
-  | PatternSequenceChallenge
-  | ColorGridChallenge
-  | DistortedTextChallenge
-  | SliderAlignChallenge;
+export type Challenge = MathPuzzleChallenge | PatternSequenceChallenge | ColorGridChallenge;
 
 /**
  * The shape a user submits back for validation. Kept separate from `Challenge`
- * because the answer type differs by challenge (number, string, string[], position).
+ * because the answer type differs by challenge (a number, or a set of tile ids).
  */
-export type ChallengeAnswer = number | string | string[];
+export type ChallengeAnswer = number | string[];

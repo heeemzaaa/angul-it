@@ -4,10 +4,8 @@ import {
   ChallengeType,
   ColorGridChallenge,
   ColorGridTile,
-  DistortedTextChallenge,
   MathPuzzleChallenge,
   PatternSequenceChallenge,
-  SliderAlignChallenge,
 } from '../models/challenge.model';
 
 /** Inclusive random integer in [min, max]. */
@@ -84,54 +82,19 @@ export function generateColorGrid(): ColorGridChallenge {
   };
 }
 
-// Excludes visually ambiguous characters (0/O, 1/I) since the whole point is reading distortion.
-const TEXT_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const TEXT_LENGTH = 6;
-
-export function generateDistortedText(): DistortedTextChallenge {
-  let text = '';
-  for (let i = 0; i < TEXT_LENGTH; i++) {
-    text += randomItem(TEXT_ALPHABET.split(''));
-  }
-  return {
-    id: newChallengeId(),
-    type: ChallengeType.DistortedText,
-    instructions: 'Type the distorted text exactly as shown.',
-    displayText: text,
-    answer: text,
-  };
-}
-
-export function generateSliderAlign(): SliderAlignChallenge {
-  return {
-    id: newChallengeId(),
-    type: ChallengeType.SliderAlign,
-    instructions: 'Drag the slider until it locks into the target zone.',
-    targetPosition: randomInt(15, 85),
-    tolerance: 3,
-  };
-}
-
 const GENERATORS: Record<ChallengeType, () => Challenge> = {
   [ChallengeType.MathPuzzle]: generateMathPuzzle,
   [ChallengeType.PatternSequence]: generatePatternSequence,
   [ChallengeType.ColorGrid]: generateColorGrid,
-  [ChallengeType.DistortedText]: generateDistortedText,
-  [ChallengeType.SliderAlign]: generateSliderAlign,
 };
 
 export function generateChallenge(type: ChallengeType): Challenge {
   return GENERATORS[type]();
 }
 
-/**
- * Picks `count` challenge types for a session, shuffled so stage order (and
- * which types appear) varies between sessions — the randomized-diversity bonus.
- * Cycles through the catalogue without immediate repeats if `count` exceeds it.
- */
-export function pickStageTypes(count: number): ChallengeType[] {
-  const shuffled = Object.values(ChallengeType).sort(() => Math.random() - 0.5);
-  return Array.from({ length: count }, (_, i) => shuffled[i % shuffled.length]);
+/** All challenge types, shuffled — one stage per type, in a random order each session. */
+export function pickStageTypes(): ChallengeType[] {
+  return Object.values(ChallengeType).sort(() => Math.random() - 0.5);
 }
 
 /** Single source of truth for "was this answer right" — one case per challenge type. */
@@ -141,12 +104,6 @@ export function isAnswerCorrect(challenge: Challenge, answer: ChallengeAnswer): 
     case ChallengeType.PatternSequence:
       return Number(answer) === challenge.answer;
 
-    case ChallengeType.DistortedText:
-      return (
-        typeof answer === 'string' &&
-        answer.trim().toLowerCase() === challenge.answer.toLowerCase()
-      );
-
     case ChallengeType.ColorGrid: {
       if (!Array.isArray(answer)) return false;
       const correctIds = challenge.tiles
@@ -155,8 +112,5 @@ export function isAnswerCorrect(challenge: Challenge, answer: ChallengeAnswer): 
       const selected = new Set(answer);
       return correctIds.length === selected.size && correctIds.every((id) => selected.has(id));
     }
-
-    case ChallengeType.SliderAlign:
-      return typeof answer === 'number' && Math.abs(answer - challenge.targetPosition) <= challenge.tolerance;
   }
 }
