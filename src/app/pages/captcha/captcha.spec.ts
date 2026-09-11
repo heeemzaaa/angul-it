@@ -44,15 +44,20 @@ describe('Captcha', () => {
     expect(component).toBeTruthy();
   });
 
-  it('renders a number input for math/pattern stages, or a 3x3 grid for color-grid stages', () => {
+  it('renders a labeled number input for math/pattern stages, or a 3x3 grid of named tiles for color-grid stages', () => {
     const challenge = captchaState.currentStage()!.challenge;
     const compiled = fixture.nativeElement as HTMLElement;
 
     if (challenge.type === ChallengeType.ColorGrid) {
-      expect(compiled.querySelectorAll('.tile')).toHaveLength(9);
+      const tiles = compiled.querySelectorAll('.tile');
+      expect(tiles).toHaveLength(9);
       expect(compiled.querySelector('input[type="number"]')).toBeNull();
+      // Screen readers can't perceive color from a background style alone.
+      tiles.forEach((tile) => expect(tile.getAttribute('aria-label')).toBeTruthy());
     } else {
-      expect(compiled.querySelector('input[type="number"]')).not.toBeNull();
+      const input = compiled.querySelector('input[type="number"]') as HTMLInputElement;
+      expect(input).not.toBeNull();
+      expect(compiled.querySelector(`label[for="${input.id}"]`)).not.toBeNull();
       expect(compiled.querySelectorAll('.tile')).toHaveLength(0);
     }
   });
@@ -76,7 +81,13 @@ describe('Captcha', () => {
 
     expect(component.wasWrong()).toBe(true);
     expect(captchaState.currentStage()!.attempts).toBe(1);
-    expect(fixture.nativeElement.querySelector('.feedback')).not.toBeNull();
+    // .feedback is an always-present aria-live region (so screen readers pick up the
+    // change); only its text content signals whether an attempt just failed.
+    expect(fixture.nativeElement.querySelector('.feedback').textContent).toContain('Not quite');
+  });
+
+  it('leaves the aria-live feedback region empty before any submission', () => {
+    expect(fixture.nativeElement.querySelector('.feedback').textContent.trim()).toBe('');
   });
 
   it('resets the answer state after a wrong submission instead of leaving a stale pick behind', () => {

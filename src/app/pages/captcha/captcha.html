@@ -6,18 +6,24 @@
     @switch (currentStage.challenge.type) {
       @case (ChallengeType.MathPuzzle) {
         <p class="prompt">{{ currentStage.challenge.expression }} = ?</p>
-        <input type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" autofocus />
+        <label for="answer">Your answer</label>
+        <input id="answer" type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" />
       }
       @case (ChallengeType.PatternSequence) {
         <p class="prompt">{{ currentStage.challenge.sequence.join(', ') }}, ?</p>
-        <input type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" autofocus />
+        <label for="answer">Your answer</label>
+        <input id="answer" type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" />
       }
       @case (ChallengeType.ColorGrid) {
         <p class="prompt">
           Match this color:
-          <span class="swatch" [style.background]="currentStage.challenge.targetColor"></span>
+          <span
+            class="swatch"
+            [style.background]="currentStage.challenge.targetColor"
+            [attr.aria-label]="colorName(currentStage.challenge.targetColor)"
+          ></span>
         </p>
-        <div class="grid">
+        <div class="grid" role="group" aria-label="Color tiles">
           @for (tile of currentStage.challenge.tiles; track tile.id) {
             <button
               type="button"
@@ -25,6 +31,7 @@
               [style.background]="tile.color"
               [class.selected]="selectedTileIds().includes(tile.id)"
               (click)="toggleTile(tile.id)"
+              [attr.aria-label]="colorName(tile.color)"
               [attr.aria-pressed]="selectedTileIds().includes(tile.id)"
             ></button>
           }
@@ -32,9 +39,11 @@
       }
     }
 
-    @if (wasWrong()) {
-      <p class="feedback">Not quite — try again.</p>
-    }
+    <p class="feedback" aria-live="polite">
+      @if (wasWrong()) {
+        Not quite — try again.
+      }
+    </p>
 
     <button type="button" class="submit" (click)="submit()" [disabled]="!canSubmit">Submit</button>
     <p class="attempts">Attempts on this stage: {{ currentStage.attempts }}</p>

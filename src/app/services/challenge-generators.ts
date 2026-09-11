@@ -54,8 +54,21 @@ export function generatePatternSequence(): PatternSequenceChallenge {
   };
 }
 
-const GRID_PALETTE = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22'];
+// Names double as the accessible label for each tile — screen readers can't perceive color alone.
+const GRID_COLORS: Record<string, string> = {
+  '#e74c3c': 'red',
+  '#3498db': 'blue',
+  '#2ecc71': 'green',
+  '#f1c40f': 'yellow',
+  '#9b59b6': 'purple',
+  '#e67e22': 'orange',
+};
+const GRID_PALETTE = Object.keys(GRID_COLORS);
 const GRID_SIZE = 9;
+
+export function colorName(hex: string): string {
+  return GRID_COLORS[hex] ?? hex;
+}
 
 export function generateColorGrid(): ColorGridChallenge {
   const targetColor = randomItem(GRID_PALETTE);
