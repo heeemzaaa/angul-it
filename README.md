@@ -1,59 +1,50 @@
-# AngulIt
+# Angul-It
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.0.
+An interactive, multi-stage CAPTCHA built with Angular. Every challenge is implemented from
+scratch — no external CAPTCHA library — to practice state management, form validation,
+guarded routing, and accessible UI in a real Angular app.
 
-## Development server
+## How it works
 
-To start a local development server, run:
+- **Home** → **Captcha** → **Result**, connected entirely through the Angular Router (no full
+  page reloads).
+- A session has one stage per challenge type, in a random order each time:
+  - **Math Puzzle** — solve a generated arithmetic expression.
+  - **Pattern Sequence** — find the next number in a sequence.
+  - **Color Grid** — select every tile matching a target color.
+- Progress is held in a signal-based `CaptchaState` service and mirrored to `localStorage` on
+  every change, so a page refresh resumes exactly where you left off instead of losing state.
+- Two route guards enforce the flow in both directions: `/result` redirects back to `/captcha`
+  unless every stage is complete, and `/captcha` redirects to `/result` once the session is
+  already finished (so a stale, already-completed stage never gets re-shown).
+- Built with accessibility in mind: labeled inputs, an `aria-live` region for pass/fail
+  feedback, named (not color-only) accessible labels on the color-grid tiles, and explicit
+  focus management moving between stages.
 
-```bash
-ng serve
+## Project structure
+
+```
+src/app/
+├── models/          Challenge and session type definitions
+├── services/         CaptchaState (persistence) + challenge generators/validation
+├── guards/           Route guards for /captcha and /result
+├── pages/
+│   ├── home/         Landing page
+│   ├── captcha/       Renders the current stage, validates answers
+│   └── result/        Summary + restart, once every stage is complete
+└── testing/           Shared test helpers
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Getting started
 
 ```bash
-ng generate component component-name
+npm install
+npm start        # ng serve — http://localhost:4200
+npm test         # ng test — Vitest, runs the full unit test suite
+npm run build    # ng build — production build to dist/
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Tech
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Angular 21 (standalone components, signals, functional route guards), Reactive Forms, Vitest.
+No external CAPTCHA dependency — check `package.json`, it's just `@angular/*` and `rxjs`.
