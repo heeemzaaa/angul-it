@@ -15,10 +15,16 @@ function enterAnswer(component: Captcha, answer: ReturnType<typeof correctAnswer
   }
 }
 
-/** Stage order is shuffled per session — skip forward until a color-grid stage is current. */
-function advanceToColorGridStage(state: CaptchaState): void {
+/**
+ * Stage order is shuffled per session — skip forward until a color-grid stage is
+ * current. Goes through the component's own submit(), not the service directly,
+ * so `viewedStageIndex` stays in sync exactly as it would for a real user (the
+ * component is the only thing that ever advances the session in the real app).
+ */
+function advanceToColorGridStage(component: Captcha, state: CaptchaState): void {
   while (state.currentStage()!.challenge.type !== ChallengeType.ColorGrid) {
-    state.submitAnswer(correctAnswerFor(state));
+    enterAnswer(component, correctAnswerFor(state));
+    component.submit();
   }
 }
 
@@ -107,7 +113,7 @@ describe('Captcha', () => {
   });
 
   it('regression: a leftover wrong-tile selection no longer corrupts the next correct submission', () => {
-    advanceToColorGridStage(captchaState);
+    advanceToColorGridStage(component, captchaState);
     fixture.detectChanges();
 
     const challenge = captchaState.currentStage()!.challenge;
@@ -148,17 +154,72 @@ describe('Captcha', () => {
     const router = TestBed.inject(Router);
     const navigateSpy = vi.spyOn(router, 'navigateByUrl');
 
-    // Drive every stage but the last one directly through the service...
     const lastStageIndex = captchaState.session().stages.length - 1;
     while (captchaState.session().currentStageIndex < lastStageIndex) {
-      captchaState.submitAnswer(correctAnswerFor(captchaState));
+      enterAnswer(component, correctAnswerFor(captchaState));
+      component.submit();
     }
     fixture.detectChanges();
 
-    // ...then answer the final stage through the component itself.
     enterAnswer(component, correctAnswerFor(captchaState));
     component.submit();
 
     expect(navigateSpy).toHaveBeenCalledWith('/result');
+  });
+
+  describe('backward navigation through completed stages', () => {
+    it('locks stages that have not been reached yet', () => {
+      const lastIndex = captchaState.session().stages.length - 1;
+      expect(component.canViewStage(0)).toBe(true);
+      expect(component.canViewStage(lastIndex)).toBe(false);
+
+      const pills = fixture.nativeElement.querySelectorAll('.stage-pill') as NodeListOf<HTMLButtonElement>;
+      expect(pills[0].disabled).toBe(false);
+      expect(pills[lastIndex].disabled).toBe(true);
+    });
+
+    it('shows a read-only summary (no submit UI) when viewing a completed stage', () => {
+      enterAnswer(component, correctAnswerFor(captchaState)); // completes stage 0
+      component.submit();
+      fixture.detectChanges();
+
+      component.viewStage(0);
+      fixture.detectChanges();
+
+      expect(component.isViewingActiveStage()).toBe(false);
+      expect(fixture.nativeElement.querySelector('button.submit')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.completed-note').textContent).toContain('Completed');
+    });
+
+    it('ignores toggleTile and submit while viewing a non-active stage', () => {
+      enterAnswer(component, correctAnswerFor(captchaState)); // completes stage 0
+      component.submit();
+      fixture.detectChanges();
+      const attemptsBefore = captchaState.session().stages[1].attempts;
+
+      component.viewStage(0);
+      fixture.detectChanges();
+      component.toggleTile('tile-0');
+      component.submit();
+
+      expect(component.selectedTileIds()).toEqual([]);
+      expect(captchaState.session().stages[1].attempts).toBe(attemptsBefore);
+    });
+
+    it('returns to the interactive form when navigating back to the active stage', () => {
+      enterAnswer(component, correctAnswerFor(captchaState)); // completes stage 0
+      component.submit();
+      fixture.detectChanges();
+
+      component.viewStage(0);
+      fixture.detectChanges();
+      expect(component.isViewingActiveStage()).toBe(false);
+
+      component.viewStage(1);
+      fixture.detectChanges();
+
+      expect(component.isViewingActiveStage()).toBe(true);
+      expect(fixture.nativeElement.querySelector('button.submit')).not.toBeNull();
+    });
   });
 });

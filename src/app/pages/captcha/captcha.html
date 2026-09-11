@@ -1,51 +1,81 @@
-@if (stage(); as currentStage) {
+@if (viewedStage(); as viewed) {
   <section>
-    <p class="progress">Stage {{ currentStage.stageIndex + 1 }} of {{ stageCount }}</p>
-    <p class="instructions">{{ currentStage.challenge.instructions }}</p>
+    <nav class="stage-nav" aria-label="Stages">
+      @for (s of stages(); track s.stageIndex) {
+        <button
+          type="button"
+          class="stage-pill"
+          [class.completed]="s.status === 'completed'"
+          [class.current]="s.stageIndex === viewedStageIndex()"
+          [disabled]="!canViewStage(s.stageIndex)"
+          [attr.aria-current]="s.stageIndex === viewedStageIndex() ? 'step' : null"
+          [attr.aria-label]="
+            'Stage ' + (s.stageIndex + 1) + (s.status === 'completed' ? ', completed' : canViewStage(s.stageIndex) ? ', current' : ', locked')
+          "
+          (click)="viewStage(s.stageIndex)"
+        >{{ s.stageIndex + 1 }}</button>
+      }
+    </nav>
 
-    @switch (currentStage.challenge.type) {
+    <p class="progress">Stage {{ viewed.stageIndex + 1 }} of {{ stageCount }}</p>
+    <p class="instructions">{{ viewed.challenge.instructions }}</p>
+
+    @switch (viewed.challenge.type) {
       @case (ChallengeType.MathPuzzle) {
-        <p class="prompt">{{ currentStage.challenge.expression }} = ?</p>
-        <label for="answer">Your answer</label>
-        <input id="answer" type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" />
+        <p class="prompt">
+          {{ viewed.challenge.expression }} = {{ isViewingActiveStage() ? '?' : viewed.challenge.answer }}
+        </p>
+        @if (isViewingActiveStage()) {
+          <label for="answer">Your answer</label>
+          <input id="answer" type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" />
+        }
       }
       @case (ChallengeType.PatternSequence) {
-        <p class="prompt">{{ currentStage.challenge.sequence.join(', ') }}, ?</p>
-        <label for="answer">Your answer</label>
-        <input id="answer" type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" />
+        <p class="prompt">
+          {{ viewed.challenge.sequence.join(', ') }}, {{ isViewingActiveStage() ? '?' : viewed.challenge.answer }}
+        </p>
+        @if (isViewingActiveStage()) {
+          <label for="answer">Your answer</label>
+          <input id="answer" type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" />
+        }
       }
       @case (ChallengeType.ColorGrid) {
         <p class="prompt">
           Match this color:
           <span
             class="swatch"
-            [style.background]="currentStage.challenge.targetColor"
-            [attr.aria-label]="colorName(currentStage.challenge.targetColor)"
+            [style.background]="viewed.challenge.targetColor"
+            [attr.aria-label]="colorName(viewed.challenge.targetColor)"
           ></span>
         </p>
         <div class="grid" role="group" aria-label="Color tiles">
-          @for (tile of currentStage.challenge.tiles; track tile.id) {
+          @for (tile of viewed.challenge.tiles; track tile.id) {
             <button
               type="button"
               class="tile"
               [style.background]="tile.color"
-              [class.selected]="selectedTileIds().includes(tile.id)"
+              [class.selected]="isViewingActiveStage() && selectedTileIds().includes(tile.id)"
+              [class.correct]="!isViewingActiveStage() && tile.color === viewed.challenge.targetColor"
+              [disabled]="!isViewingActiveStage()"
               (click)="toggleTile(tile.id)"
               [attr.aria-label]="colorName(tile.color)"
-              [attr.aria-pressed]="selectedTileIds().includes(tile.id)"
+              [attr.aria-pressed]="isViewingActiveStage() && selectedTileIds().includes(tile.id)"
             ></button>
           }
         </div>
       }
     }
 
-    <p class="feedback" aria-live="polite">
-      @if (wasWrong()) {
-        Not quite — try again.
-      }
-    </p>
-
-    <button type="button" class="submit" (click)="submit()" [disabled]="!canSubmit">Submit</button>
-    <p class="attempts">Attempts on this stage: {{ currentStage.attempts }}</p>
+    @if (isViewingActiveStage()) {
+      <p class="feedback" aria-live="polite">
+        @if (wasWrong()) {
+          Not quite — try again.
+        }
+      </p>
+      <button type="button" class="submit" (click)="submit()" [disabled]="!canSubmit">Submit</button>
+      <p class="attempts">Attempts on this stage: {{ viewed.attempts }}</p>
+    } @else {
+      <p class="completed-note">✓ Completed in {{ viewed.attempts }} attempt(s)</p>
+    }
   </section>
 }
