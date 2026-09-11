@@ -15,6 +15,13 @@ function enterAnswer(component: Captcha, answer: ReturnType<typeof correctAnswer
   }
 }
 
+/** Stage order is shuffled per session — skip forward until a color-grid stage is current. */
+function advanceToColorGridStage(state: CaptchaState): void {
+  while (state.currentStage()!.challenge.type !== ChallengeType.ColorGrid) {
+    state.submitAnswer(correctAnswerFor(state));
+  }
+}
+
 describe('Captcha', () => {
   let component: Captcha;
   let fixture: ComponentFixture<Captcha>;
@@ -70,6 +77,49 @@ describe('Captcha', () => {
     expect(component.wasWrong()).toBe(true);
     expect(captchaState.currentStage()!.attempts).toBe(1);
     expect(fixture.nativeElement.querySelector('.feedback')).not.toBeNull();
+  });
+
+  it('resets the answer state after a wrong submission instead of leaving a stale pick behind', () => {
+    const challenge = captchaState.currentStage()!.challenge;
+    if (challenge.type === ChallengeType.ColorGrid) {
+      const wrongTile = challenge.tiles.find((t) => t.color !== challenge.targetColor)!;
+      component.toggleTile(wrongTile.id);
+    } else {
+      component.numberAnswer.setValue(challenge.answer + 1000);
+    }
+
+    component.submit();
+    fixture.detectChanges();
+
+    expect(component.selectedTileIds()).toEqual([]);
+    expect(component.numberAnswer.value).toBeNull();
+  });
+
+  it('regression: a leftover wrong-tile selection no longer corrupts the next correct submission', () => {
+    advanceToColorGridStage(captchaState);
+    fixture.detectChanges();
+
+    const challenge = captchaState.currentStage()!.challenge;
+    if (challenge.type !== ChallengeType.ColorGrid) {
+      throw new Error('expected a color-grid stage');
+    }
+    const wrongTile = challenge.tiles.find((t) => t.color !== challenge.targetColor)!;
+    const correctIds = challenge.tiles.filter((t) => t.color === challenge.targetColor).map((t) => t.id);
+
+    // First attempt: pick a wrong tile.
+    component.toggleTile(wrongTile.id);
+    component.submit();
+    fixture.detectChanges();
+    expect(component.wasWrong()).toBe(true);
+
+    // Second attempt: select only the correct tiles. Before the fix, the
+    // wrong tile from the first attempt was still selected underneath, so
+    // this would still fail even though the user picked the right answer.
+    correctIds.forEach((id) => component.toggleTile(id));
+    component.submit();
+    fixture.detectChanges();
+
+    expect(component.wasWrong()).toBe(false);
   });
 
   it('advances to the next stage on a correct submission', () => {

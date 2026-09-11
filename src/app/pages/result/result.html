@@ -1,4 +1,17 @@
-<section>
-  <h1>Result</h1>
-  <p>Summary placeholder — wired up in a later step.</p>
-</section>
+@if (summary(); as result) {
+  <section>
+    <h1>Well done!</h1>
+    <p>You completed all {{ result.totalStages }} stages.</p>
+
+    <ul class="stage-list">
+      @for (stage of result.perStage; track stage.stageIndex) {
+        <li>Stage {{ stage.stageIndex + 1 }} — {{ label(stage.type) }}: {{ stage.attempts }} attempt(s)</li>
+      }
+    </ul>
+
+    <p>Total attempts: {{ result.totalAttempts }}</p>
+    <p>Time taken: {{ (result.durationMs / 1000).toFixed(1) }}s</p>
+
+    <button type="button" (click)="restart()">Try again</button>
+  </section>
+}

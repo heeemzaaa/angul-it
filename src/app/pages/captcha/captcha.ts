@@ -46,12 +46,14 @@ export class Captcha {
     const correct = this.captchaState.submitAnswer(answer);
     this.wasWrong.set(!correct);
 
-    if (correct) {
-      this.numberAnswer.reset();
-      this.selectedTileIds.set([]);
-      if (this.captchaState.isComplete()) {
-        this.router.navigateByUrl('/result');
-      }
+    // Always start the next attempt from a clean slate — otherwise a stale
+    // selection from a previous wrong guess lingers and silently corrupts
+    // the next submission (a tile the user forgot was still toggled on).
+    this.numberAnswer.reset();
+    this.selectedTileIds.set([]);
+
+    if (correct && this.captchaState.isComplete()) {
+      this.router.navigateByUrl('/result');
     }
   }
 }

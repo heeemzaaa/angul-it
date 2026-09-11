@@ -33,3 +33,16 @@ export interface ResultSummary {
     attempts: number;
   }>;
 }
+
+export function buildResultSummary(session: CaptchaSession): ResultSummary {
+  return {
+    totalStages: session.stages.length,
+    totalAttempts: session.stages.reduce((sum, stage) => sum + stage.attempts, 0),
+    durationMs: (session.completedAt ?? Date.now()) - session.startedAt,
+    perStage: session.stages.map((stage) => ({
+      stageIndex: stage.stageIndex,
+      type: stage.challenge.type,
+      attempts: stage.attempts,
+    })),
+  };
+}

@@ -1,0 +1,15 @@
+.stage-list {
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+  text-align: left;
+}
+
+.stage-list li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.stage-list li:last-child {
+  border-bottom: none;
+}
