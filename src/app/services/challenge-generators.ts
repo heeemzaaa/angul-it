@@ -8,7 +8,6 @@ import {
   PatternSequenceChallenge,
 } from '../models/challenge.model';
 
-/** Inclusive random integer in [min, max]. */
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -92,12 +91,10 @@ export function generateChallenge(type: ChallengeType): Challenge {
   return GENERATORS[type]();
 }
 
-/** All challenge types, shuffled — one stage per type, in a random order each session. */
 export function pickStageTypes(): ChallengeType[] {
   return Object.values(ChallengeType).sort(() => Math.random() - 0.5);
 }
 
-/** Single source of truth for "was this answer right" — one case per challenge type. */
 export function isAnswerCorrect(challenge: Challenge, answer: ChallengeAnswer): boolean {
   switch (challenge.type) {
     case ChallengeType.MathPuzzle:

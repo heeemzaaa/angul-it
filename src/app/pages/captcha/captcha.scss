@@ -1,0 +1,41 @@
+.prompt {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.swatch {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  vertical-align: middle;
+  border-radius: 0.25rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.tile {
+  aspect-ratio: 1;
+  margin: 0;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 0.5rem;
+  cursor: pointer;
+
+  &.selected {
+    border-color: #111;
+  }
+}
+
+.feedback {
+  color: #c0392b;
+}
+
+.attempts {
+  color: #666;
+  font-size: 0.875rem;
+}

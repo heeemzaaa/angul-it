@@ -5,20 +5,13 @@ import { generateChallenge, isAnswerCorrect, pickStageTypes } from './challenge-
 
 const STORAGE_KEY = 'angul-it:session';
 
-/** One stage per challenge type. */
 export const STAGE_COUNT = Object.values(ChallengeType).length;
 
-/**
- * Single source of truth for "where is the user in the CAPTCHA flow." Holds
- * the active CaptchaSession as a signal, persists every change to
- * localStorage, and is what both CaptchaComponent and the /result route
- * guard read from.
- */
+
 @Injectable({ providedIn: 'root' })
 export class CaptchaState {
   private readonly _session = signal<CaptchaSession>(this.loadOrCreateSession());
 
-  /** Read-only view of the full session — components derive their UI from this. */
   readonly session = this._session.asReadonly();
 
   readonly currentStage = computed<StageProgress | undefined>(() => {
@@ -28,11 +21,7 @@ export class CaptchaState {
 
   readonly isComplete = computed(() => isSessionComplete(this._session()));
 
-  /**
-   * Checks `answer` against the current stage's challenge. On a correct
-   * answer, marks the stage completed and — unless it was the last stage —
-   * unlocks and advances to the next one. Returns whether it was correct.
-   */
+
   submitAnswer(answer: ChallengeAnswer): boolean {
     const session = this._session();
     const stageIndex = session.currentStageIndex;
@@ -65,7 +54,6 @@ export class CaptchaState {
     return correct;
   }
 
-  /** Clears progress and starts a brand-new, freshly-generated session. */
   restart(): void {
     this.persist(this.createSession());
   }

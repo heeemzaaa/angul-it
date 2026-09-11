@@ -1,4 +1,42 @@
-<section>
-  <h1>Captcha</h1>
-  <p>Stage challenge placeholder — wired up in a later step.</p>
-</section>
+@if (stage(); as currentStage) {
+  <section>
+    <p class="progress">Stage {{ currentStage.stageIndex + 1 }} of {{ stageCount }}</p>
+    <p class="instructions">{{ currentStage.challenge.instructions }}</p>
+
+    @switch (currentStage.challenge.type) {
+      @case (ChallengeType.MathPuzzle) {
+        <p class="prompt">{{ currentStage.challenge.expression }} = ?</p>
+        <input type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" autofocus />
+      }
+      @case (ChallengeType.PatternSequence) {
+        <p class="prompt">{{ currentStage.challenge.sequence.join(', ') }}, ?</p>
+        <input type="number" [formControl]="numberAnswer" (keyup.enter)="submit()" autofocus />
+      }
+      @case (ChallengeType.ColorGrid) {
+        <p class="prompt">
+          Match this color:
+          <span class="swatch" [style.background]="currentStage.challenge.targetColor"></span>
+        </p>
+        <div class="grid">
+          @for (tile of currentStage.challenge.tiles; track tile.id) {
+            <button
+              type="button"
+              class="tile"
+              [style.background]="tile.color"
+              [class.selected]="selectedTileIds().includes(tile.id)"
+              (click)="toggleTile(tile.id)"
+              [attr.aria-pressed]="selectedTileIds().includes(tile.id)"
+            ></button>
+          }
+        </div>
+      }
+    }
+
+    @if (wasWrong()) {
+      <p class="feedback">Not quite — try again.</p>
+    }
+
+    <button type="button" class="submit" (click)="submit()" [disabled]="!canSubmit">Submit</button>
+    <p class="attempts">Attempts on this stage: {{ currentStage.attempts }}</p>
+  </section>
+}

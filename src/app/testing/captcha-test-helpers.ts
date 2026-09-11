@@ -1,7 +1,6 @@
 import { ChallengeAnswer, ChallengeType } from '../models/challenge.model';
 import { CaptchaState } from '../services/captcha-state';
 
-/** Answers correctly regardless of challenge type/shape — used to drive the flow forward in tests. */
 export function correctAnswerFor(state: CaptchaState): ChallengeAnswer {
   const challenge = state.currentStage()!.challenge;
   switch (challenge.type) {
