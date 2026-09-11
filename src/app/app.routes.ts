@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { sessionActiveGuard } from './guards/session-active-guard';
 import { sessionCompleteGuard } from './guards/session-complete-guard';
 
 export const routes: Routes = [
@@ -9,6 +10,7 @@ export const routes: Routes = [
   {
     path: 'captcha',
     loadComponent: () => import('./pages/captcha/captcha').then((m) => m.Captcha),
+    canActivate: [sessionActiveGuard],
   },
   {
     path: 'result',
