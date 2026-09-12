@@ -1,4 +1,4 @@
-import { Challenge } from './challenge.model';
+import { Challenge, ChallengeType } from './challenge.model';
 
 export type StageStatus = 'locked' | 'active' | 'completed';
 
@@ -19,30 +19,44 @@ export interface CaptchaSession {
 }
 
 export function isSessionComplete(session: CaptchaSession): boolean {
-  return session.stages.every((stage) => stage.status === 'completed');
+  for (const stage of session.stages) {
+    if (stage.status !== 'completed') {
+      return false;
+    }
+  }
+  return true;
 }
 
+export interface StageSummary {
+  stageIndex: number;
+  type: ChallengeType;
+  attempts: number;
+}
 
 export interface ResultSummary {
   totalStages: number;
   totalAttempts: number;
   durationMs: number;
-  perStage: Array<{
-    stageIndex: number;
-    type: Challenge['type'];
-    attempts: number;
-  }>;
+  perStage: StageSummary[];
 }
 
 export function buildResultSummary(session: CaptchaSession): ResultSummary {
-  return {
-    totalStages: session.stages.length,
-    totalAttempts: session.stages.reduce((sum, stage) => sum + stage.attempts, 0),
-    durationMs: (session.completedAt ?? Date.now()) - session.startedAt,
-    perStage: session.stages.map((stage) => ({
+  let totalAttempts = 0;
+  const perStage: StageSummary[] = [];
+
+  for (const stage of session.stages) {
+    totalAttempts += stage.attempts;
+    perStage.push({
       stageIndex: stage.stageIndex,
       type: stage.challenge.type,
       attempts: stage.attempts,
-    })),
+    });
+  }
+
+  return {
+    totalStages: session.stages.length,
+    totalAttempts,
+    durationMs: (session.completedAt ?? Date.now()) - session.startedAt,
+    perStage,
   };
 }

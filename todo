@@ -1,0 +1,14 @@
+1. when I extend an interface in typescript, do I take all it's attributes and add the ones I want ?
+2. what is the meaning of tiles ?
+3. what is this: export type Challenge = MathPuzzleChallenge | PatternSequenceChallenge | ImageGridChallenge;
+4. the stage status: what is active, what is locked and what is completed ?
+5. what is the ? after a variable, like completedAt? ?
+6. what is the meaning of this: durationMs: (session.completedAt ?? Date.now()) - session.startedAt
+7. in randomInt why we did this: return Math.floor(Math.random() * (max - min + 1)) + min; ?
+8. generateImageGrid function, I should know more about it
+9. pickStagesType() function, I should understand it
+10. what is this: _session, what does this _ means here ?
+11. what is computed and what is signal ?
+12. captcha-state.ts, line: 17: currentStage needs to be understanded
+13. what is the difference between this: this.viewedStage()! and this: this.viewedStage()?.challenge
+

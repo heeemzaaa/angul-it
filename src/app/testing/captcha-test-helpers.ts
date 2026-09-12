@@ -7,8 +7,15 @@ export function correctAnswerFor(state: CaptchaState): ChallengeAnswer {
     case ChallengeType.MathPuzzle:
     case ChallengeType.PatternSequence:
       return challenge.answer;
-    case ChallengeType.ImageGrid:
-      return challenge.tiles.filter((t) => t.category === challenge.targetCategory).map((t) => t.id);
+    case ChallengeType.ImageGrid: {
+      const matchingIds: string[] = [];
+      for (const tile of challenge.tiles) {
+        if (tile.category === challenge.targetCategory) {
+          matchingIds.push(tile.id);
+        }
+      }
+      return matchingIds;
+    }
   }
 }
 

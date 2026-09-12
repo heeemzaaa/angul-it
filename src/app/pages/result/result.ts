@@ -4,12 +4,6 @@ import { ChallengeType } from '../../models/challenge.model';
 import { buildResultSummary } from '../../models/session.model';
 import { CaptchaState } from '../../services/captcha-state';
 
-const CHALLENGE_TYPE_LABELS: Record<ChallengeType, string> = {
-  [ChallengeType.MathPuzzle]: 'Math Puzzle',
-  [ChallengeType.PatternSequence]: 'Pattern Sequence',
-  [ChallengeType.ImageGrid]: 'Image Grid',
-};
-
 @Component({
   selector: 'app-result',
   imports: [],
@@ -23,7 +17,13 @@ export class Result {
   readonly summary = computed(() => buildResultSummary(this.captchaState.session()));
 
   label(type: ChallengeType): string {
-    return CHALLENGE_TYPE_LABELS[type];
+    if (type === ChallengeType.MathPuzzle) {
+      return 'Math Puzzle';
+    }
+    if (type === ChallengeType.PatternSequence) {
+      return 'Pattern Sequence';
+    }
+    return 'Image Grid';
   }
 
   restart(): void {

@@ -7,5 +7,9 @@ export const sessionActiveGuard: CanActivateFn = () => {
   const captchaState = inject(CaptchaState);
   const router = inject(Router);
 
-  return !captchaState.isComplete() || router.createUrlTree(['/result']);
+  if (!captchaState.isComplete()) {
+    return true;
+  }
+  // Every stage is already done — send the user to the results page instead.
+  return router.createUrlTree(['/result']);
 };

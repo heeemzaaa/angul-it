@@ -33,7 +33,8 @@ describe('challenge-generators', () => {
       const challenge = generateImageGrid();
       expect(challenge.type).toBe(ChallengeType.ImageGrid);
       expect(challenge.tiles).toHaveLength(9);
-      expect(challenge.targetImageUrl).toBeTruthy();
+      expect(challenge.targetCategory).toBeTruthy();
+      expect(challenge.instructions).toContain(challenge.targetCategory);
       challenge.tiles.forEach((tile) => expect(tile.imageUrl).toBeTruthy());
 
       const matchingIds = challenge.tiles

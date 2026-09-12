@@ -1,6 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { ChallengeAnswer, ChallengeType } from '../models/challenge.model';
-import { CaptchaSession, StageProgress, isSessionComplete } from '../models/session.model';
+import { CaptchaSession, StageProgress, StageStatus, isSessionComplete } from '../models/session.model';
 import { generateChallenge, isAnswerCorrect, pickStageTypes } from './challenge-generators';
 
 const STORAGE_KEY = 'angul-it:session';
@@ -21,7 +21,6 @@ export class CaptchaState {
 
   readonly isComplete = computed(() => isSessionComplete(this._session()));
 
-
   submitAnswer(answer: ChallengeAnswer): boolean {
     const session = this._session();
     const stageIndex = session.currentStageIndex;
@@ -31,11 +30,20 @@ export class CaptchaState {
     }
 
     const correct = isAnswerCorrect(stage.challenge, answer);
-    const stages = session.stages.map((s): StageProgress =>
-      s.stageIndex === stageIndex
-        ? { ...s, attempts: s.attempts + 1, status: correct ? 'completed' : s.status, completedAt: correct ? Date.now() : s.completedAt }
-        : s,
-    );
+
+    const stages: StageProgress[] = [];
+    for (const s of session.stages) {
+      if (s.stageIndex !== stageIndex) {
+        stages.push(s);
+        continue;
+      }
+      const updatedStage: StageProgress = { ...s, attempts: s.attempts + 1 };
+      if (correct) {
+        updatedStage.status = 'completed';
+        updatedStage.completedAt = Date.now();
+      }
+      stages.push(updatedStage);
+    }
 
     const isLastStage = stageIndex === stages.length - 1;
     let currentStageIndex = stageIndex;
@@ -79,17 +87,26 @@ export class CaptchaState {
     try {
       return JSON.parse(raw) as CaptchaSession;
     } catch {
-      return null; // corrupted storage — fall back to a fresh session
+      return null; 
     }
   }
 
   private createSession(): CaptchaSession {
-    const stages: StageProgress[] = pickStageTypes().map((type, index) => ({
-      stageIndex: index,
-      challenge: generateChallenge(type),
-      status: index === 0 ? 'active' : 'locked',
-      attempts: 0,
-    }));
+    const types = pickStageTypes();
+
+    const stages: StageProgress[] = [];
+    for (let index = 0; index < types.length; index++) {
+      let status: StageStatus = 'locked';
+      if (index === 0) {
+        status = 'active'; 
+      }
+      stages.push({
+        stageIndex: index,
+        challenge: generateChallenge(types[index]),
+        status,
+        attempts: 0,
+      });
+    }
 
     return {
       sessionId: crypto.randomUUID(),

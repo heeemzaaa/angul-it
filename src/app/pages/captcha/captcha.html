@@ -40,15 +40,7 @@
         }
       }
       @case (ChallengeType.ImageGrid) {
-        <p class="prompt">
-          Match this image:
-          <img
-            class="target-image"
-            [src]="viewed.challenge.targetImageUrl"
-            [alt]="viewed.challenge.targetCategory"
-          />
-        </p>
-        <div class="grid" role="group" aria-label="Image tiles">
+        <div class="grid" role="group" [attr.aria-label]="'Images — select every ' + viewed.challenge.targetCategory">
           @for (tile of viewed.challenge.tiles; track tile.id) {
             <button
               type="button"

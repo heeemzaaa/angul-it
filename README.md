@@ -11,10 +11,10 @@ guarded routing, and accessible UI in a real Angular app.
 - A session has one stage per challenge type, in a random order each time:
   - **Math Puzzle** — solve a generated arithmetic expression.
   - **Pattern Sequence** — find the next number in a sequence.
-  - **Image Grid** — classic image-identification challenge: select every tile showing the
-    same thing as the reference image (cat, dog, car, tree, house, or flower). Each category
-    has several distinct real photos, not one repeated icon, so a match won't be pixel-identical
-    to the reference — same as a real image CAPTCHA.
+  - **Image Grid** — classic image-identification challenge: the prompt names a category as
+    text ("Select every image of a cat") and you pick every tile showing one. Each category
+    (cat, dog, car, tree, house, flower) has several distinct real photos, not one repeated
+    icon, so recognizing the category actually matters — same as a real image CAPTCHA.
 - A stage navigator lets you browse back through already-completed stages (read-only — no
   re-submitting a finished one) without losing your place in the active stage.
 - Progress is held in a signal-based `CaptchaState` service and mirrored to `localStorage` on
